@@ -1,0 +1,4 @@
+{
+    "targets": ["pipeline","pandas*"]
+  }
+  
