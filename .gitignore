@@ -1,2 +1,4 @@
 pylya/wholefile.py
 *.egg-info/
+*.pyc
+__pycache__/
