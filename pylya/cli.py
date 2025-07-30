@@ -1,52 +1,98 @@
-# File: cli.py
 import sys
-import atexit
+import runpy
 import argparse
-import json
-import importlib.util
+from pathlib import Path
 
-from hook_manager import HookManager
-from importer import install_import_hook
+from pylya.hook_loader import install_hooks
+from pylya.analysis import PerfAnalyzer, TypeExtractor
 
+__version__ = "0.1.0"
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(prog="lyapy", description="Dynamic instrumentation tool")
-    p.add_argument('script', help='Path to Python script to run')
-    p.add_argument('--mode', choices=['learn','enforce'], default='learn')
-    p.add_argument('--config', help='JSON config (targets & allowlist)')
-    return p.parse_args()
+ANALYSIS_MAP = {
+    "perf": PerfAnalyzer,
+    "types": TypeExtractor,
+}
 
 
-def load_config(path: str):
-    data = json.load(open(path))
-    return data.get('targets', []), data.get('allowlist', {})
+def main():
+    parser = argparse.ArgumentParser(
+        description="Learn or enforce module dependencies and hook enforcement"
+    )
+    parser.add_argument(
+        "-v", "--version",
+        action="version", version=__version__,
+        help="Show the tool version"
+    )
+    parser.add_argument(
+        "-m", "--mode",
+        choices=["learn", "enforce"], required=True,
+        help="Mode: 'learn' to generate events/deps/allowlist; 'enforce' to apply an existing allowlist"
+    )
+    parser.add_argument(
+        "-c", "--config",
+        default="config.json",
+        help="Path to config.json defining hook targets"
+    )
+    parser.add_argument(
+        "-a", "--analyses",
+        nargs="*",
+        choices=ANALYSIS_MAP.keys(),
+        default=[],
+        help="Analyses to run (only in learn mode): perf, types"
+    )
+    parser.add_argument(
+        "-o", "--outdir",
+        default=".",
+        help="Directory to write analysis logs (learn mode)"
+    )
+    parser.add_argument(
+        "--allowlist",
+        default="allowlist.json",
+        help="Path to allowlist.json (only in enforce mode, defaults to cwd/allowlist.json)"
+    )
+    parser.add_argument(
+        "script",
+        help="Target Python script to execute under hooks"
+    )
+    parser.add_argument(
+        "args",
+        nargs=argparse.REMAINDER,
+        help="Arguments to pass to the target script"
+    )
 
+    args = parser.parse_args()
+    outdir = Path(args.outdir)
 
-def main() -> None:
-    args = parse_args()
-    targets, allowlist = ([], {}) if not args.config else load_config(args.config)
+    if args.mode == "learn":
+        # Prepare output directory for analysis logs
+        outdir.mkdir(parents=True, exist_ok=True)
+        analyses = [ANALYSIS_MAP[name](outfile=str(outdir / f"{name}.log"))
+                    for name in args.analyses]
 
-    analyses = []
-    try:
-        from lyapy.plugins import CallLogger
-        analyses.append(CallLogger())
-    except ImportError:
-        pass
+        # Install hooks in learn mode; JSON reports are auto-written to cwd
+        install_hooks(
+            config_path=args.config,
+            mode="learn",
+            analyses=analyses
+        )
 
-    hook_mgr = HookManager(analyses, mode=args.mode, allowlist=allowlist)
-    install_import_hook(hook_mgr, targets)
-    sys.setprofile(hook_mgr.c_profile)
+        # Execute the script under instrumentation
+        sys.argv = [args.script] + (args.args or [])
+        runpy.run_path(args.script, run_name="__main__")
+        print(f"Learn mode complete. Logs in {outdir}, JSON reports (events.json, dependencies.json, allowlist.json) in current directory.")
 
-    for mod in list(sys.modules):
-        if any(mod == t or mod.startswith(f"{t}.") for t in targets):
-            del sys.modules[mod]
+    else:
+        # Enforce mode: use existing allowlist to block disallowed calls
+        install_hooks(
+            config_path=args.config,
+            mode="enforce",
+            analyses=[],
+            allowlist_path=args.allowlist
+        )
 
-    atexit.register(hook_mgr.write_reports)
+        # Execute the script under enforcement
+        sys.argv = [args.script] + (args.args or [])
+        runpy.run_path(args.script, run_name="__main__")
 
-    spec = importlib.util.spec_from_file_location("__main__", args.script)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["__main__"] = module
-    spec.loader.exec_module(module)
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

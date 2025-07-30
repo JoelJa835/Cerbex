@@ -1,33 +1,162 @@
 # File: analysis.py
 import threading
 import time
-from typing import Any
-from hook_manager import Analysis
+import atexit
+from typing import Any, List, Tuple
+from pylya.hook_manager import Analysis
+
+
 
 
 class PerfAnalyzer(Analysis):
     """
-    Measures execution time of each function call.
+    Measures execution time of each function call with zero I/O overhead during execution.
+    Buffers timings in memory and dumps to file at program exit.
     """
-    def __init__(self) -> None:
+    def __init__(self, outfile: str = "perf.log") -> None:
+        self.outfile = outfile
         self._local = threading.local()
+        # Buffer for (module.func, duration) tuples
+        self._buffer: List[Tuple[str, float]] = []
+        # Register dump at program exit
+        atexit.register(self._dump)
 
     def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
-        stack = getattr(self._local, 'stack', []) + [time.time()]
+        stack = getattr(self._local, "stack", [])
+        stack.append(time.time())
         self._local.stack = stack
 
     def on_return(self, module: str, func: str, result: Any) -> None:
-        stack = getattr(self._local, 'stack', [])
-        if stack:
-            start = stack.pop()
-            self._local.stack = stack
-            duration = time.time() - start
-            print(f"[Perf] {module}.{func} took {duration:.6f}s")
+        stack = getattr(self._local, "stack", [])
+        if not stack:
+            return
+        start = stack.pop()
+        self._local.stack = stack
+        duration = time.time() - start
+        # Buffer the measurement; no file I/O here
+        self._buffer.append((f"{module}.{func}", duration))
+
+    def results(self) -> List[Tuple[str, float]]:
+        """
+        Returns the list of ("module.func", duration) tuples.
+        """
+        return list(self._buffer)
+
+    def _dump(self) -> None:
+        """
+        Writes all buffered timings to the output file in one batch.
+        """
+        if not self._buffer:
+            return
+        lines = [f"[Perf] {name} took {dur:.6f}s\n" for name, dur in self._buffer]
+        with open(self.outfile, "a") as f:
+            f.writelines(lines)
+
 
 
 class TypeExtractor(Analysis):
-    """
-    Logs the return type of each function.
-    """
+    def __init__(self, outfile: str = "types.log", allowed_modules=None) -> None:
+        self._f = open(outfile, "a")
+        self.allowed = set(allowed_modules) if allowed_modules else None
+
     def on_return(self, module: str, func: str, result: Any) -> None:
-        print(f"[Type] {module}.{func} returned {type(result).__name__}")
+        if self.allowed and module not in self.allowed:
+            return
+        self._f.write(f"[Type] {module}.{func} returned {type(result).__name__}\n")
+        self._f.flush()
+
+    def __del__(self):
+        self._f.close()
+
+
+class AttrAccessAnalyzer(Analysis):
+
+    def __init__(self, outfile: str = "attr_access.log") -> None:
+        self._f = open(outfile, "a")
+        # (Other initialization as needed)
+
+    def on_attr_read(self, module: str, obj: any, attr: str) -> None:
+        # Record read access
+        self._f.write(f"READ {module} | {obj!r}.{attr}\n")
+        self._f.flush()
+
+    def on_attr_write(self, module: str, obj: any, attr: str, value: any) -> None:
+        # Record write access
+        self._f.write(f"WRITE {module} | {obj!r}.{attr} = {value!r}\n")
+        self._f.flush()
+
+    def __del__(self):
+        try:
+            self._f.close()
+        except Exception:
+            pass
+
+
+
+# class TypeExtractor(Analysis):
+#     """
+#     Logs the return type of each function to a file.
+#     """
+#     def __init__(self, outfile: str = "types.log") -> None:
+#         self._f = open(outfile, "a")
+
+#     def on_return(self, module: str, func: str, result: Any) -> None:
+#         self._f.write(f"[Type] {module}.{func} returned {type(result).__name__}\n")
+#         self._f.flush()
+
+#     def __del__(self):
+#         self._f.close()
+
+
+
+# class PerfAnalyzer(Analysis):
+#     """
+#     Measures execution time of each function call and writes to a file.
+#     """
+#     def __init__(self, outfile: str = "perf.log") -> None:
+#         self._local = threading.local()
+#         # Open file in append mode
+#         self._f = open(outfile, "a")
+
+#     def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
+#         stack = getattr(self._local, 'stack', []) + [time.time()]
+#         self._local.stack = stack
+
+#     def on_return(self, module: str, func: str, result: Any) -> None:
+#         stack = getattr(self._local, 'stack', [])
+#         if stack:
+#             start = stack.pop()
+#             self._local.stack = stack
+#             duration = time.time() - start
+#             # write to file instead of print
+#             self._f.write(f"[Perf] {module}.{func} took {duration:.6f}s\n")
+#             self._f.flush()      # ensure it’s written immediately
+
+#     def __del__(self):
+#         self._f.close()
+
+# class PerfAnalyzer(Analysis):
+#     def __init__(self, outfile: str = "perf.log", allowed_modules=None) -> None:
+#         self._local = threading.local()
+#         self._f = open(outfile, "a")
+#         self.allowed = set(allowed_modules) if allowed_modules else None
+
+#     def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
+#         if self.allowed and module not in self.allowed:
+#             return
+#         stack = getattr(self._local, 'stack', []) + [time.time()]
+#         self._local.stack = stack
+
+#     def on_return(self, module: str, func: str, result: Any) -> None:
+#         if self.allowed and module not in self.allowed:
+#             return
+#         stack = getattr(self._local, 'stack', [])
+#         if stack:
+#             start = stack.pop()
+#             self._local.stack = stack
+#             duration = time.time() - start
+#             self._f.write(f"[Perf] {module}.{func} took {duration:.6f}s\n")
+#             self._f.flush()
+
+#     def __del__(self):
+#         self._f.close()

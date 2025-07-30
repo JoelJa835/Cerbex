@@ -5,12 +5,12 @@ import importlib
 import importlib.abc
 import importlib.machinery
 import inspect
-from types import ModuleType, FunctionType
+from types import ModuleType, FunctionType, MethodType
 from typing import List
 from weakref import WeakKeyDictionary
 
-from hook_manager import HookManager
-from utils import make_wrapper
+from pylya.hook_manager import HookManager
+from pylya.utils import make_wrapper
 
 
 
@@ -21,26 +21,69 @@ PRIMITIVES = (str, int, float, bool, bytes, type(None))
 
 
 def wrap_value(val, module_name: str, hook_mgr: HookManager):
+
+    # primitives & modules stay
     if isinstance(val, PRIMITIVES) or isinstance(val, ModuleType):
         return val
 
-    if isinstance(val, FunctionType) and val.__module__.startswith(module_name):
-        # 1) Already wrapped?
+    # # 1) If this is a class defined in our module, wrap its members
+    # if inspect.isclass(val) and val.__module__ == module_name:
+    #     for attr_name, attr_val in list(val.__dict__.items()):
+    #         wrapped = wrap_value(attr_val, module_name, hook_mgr)
+    #         if wrapped is not attr_val:
+    #             setattr(val, attr_name, wrapped)
+    #     return val
+      # 1) If this is a class defined in our target module, rebuild it
+    if inspect.isclass(val) and val.__module__ == module_name:
+        orig_cls = val
+
+        # 1a) Create a metaclass that intercepts class‐level get/sets
+        class AttrMeta(type(orig_cls)):
+            def __getattribute__(cls, name):
+                hook_mgr.on_attr_read(orig_cls.__module__, cls, name)
+                return super().__getattribute__(name)
+
+            def __setattr__(cls, name, value):
+                hook_mgr.on_attr_write(orig_cls.__module__, cls, name, value)
+                return super().__setattr__(name, value)
+
+        # 1b) Rebuild the class under AttrMeta
+        Wrapped = AttrMeta(
+            orig_cls.__name__,
+            orig_cls.__bases__,
+            dict(orig_cls.__dict__),
+        )
+
+        # 1c) Inject instance‐level hooks into Wrapped
+        def __getattribute__(self, name):
+            hook_mgr.on_attr_read(orig_cls.__module__, self, name)
+            return super(Wrapped, self).__getattribute__(name)
+
+        def __setattr__(self, name, value):
+            hook_mgr.on_attr_write(orig_cls.__module__, self, name, value)
+            return super(Wrapped, self).__setattr__(name, value)
+
+        Wrapped.__getattribute__ = __getattribute__
+        Wrapped.__setattr__      = __setattr__
+
+        return Wrapped
+
+    # 2) Functions & bound methods
+    if isinstance(val, (FunctionType, MethodType)) and val.__module__.startswith(module_name):
+        # print(f"🔀 wrap_value called for module_name='{module_name}', val.__module__='{val.__module__}', fn={val.__name__}")
         cached = _wrap_cache.get(val)
         if cached is not None:
             return cached
 
-        # 2) Skip repr/str or already-wrapped markers
         if val.__name__ in ('__repr__', '__str__') or hasattr(val, '__wrapped__'):
             return val
 
         is_async = inspect.iscoroutinefunction(val)
         wrapper = make_wrapper(val, module_name, hook_mgr, is_async)
-
-        # 3) Cache it
         _wrap_cache[val] = wrapper
         return wrapper
 
+    # 3) Everything else
     return val
 
 
@@ -55,7 +98,8 @@ class InstrumentLoader(importlib.abc.Loader):
 
     def exec_module(self, module):
         parent = module.__spec__.parent or module.__name__
-        self.hook_mgr.on_import(parent, module.__name__)
+        if parent != module.__name__:  
+            self.hook_mgr.on_import(parent, module.__name__)
 
         try:
             source = self.orig_loader.get_source(module.__name__)
@@ -88,8 +132,14 @@ class InstrumentFinder(importlib.abc.MetaPathFinder):
             fullname == t or (t.endswith('*') and fullname.startswith(t[:-1]))
             for t in self.targets
         )
+    
 
     def find_spec(self, fullname, path, target=None):
+        # 1) Always record first-time imports via on_import
+        #    Finder only sees non-cached modules
+        self.hook_mgr.on_import(None, fullname)
+
+        # 2) Delegate to default PathFinder
         spec = importlib.machinery.PathFinder.find_spec(fullname, path)
         if spec and self._matches(fullname):
             spec.loader = InstrumentLoader(self.hook_mgr, spec.loader)
@@ -101,19 +151,30 @@ def install_import_hook(
     targets: List[str],
     replace_import_module: bool = True
 ) -> None:
-    orig_import = builtins.__import__
-
-    def hooked_import(name, globals=None, locals=None, fromlist=(), level=0):
-        parent = globals.get('__name__') if globals else None
-        hook_mgr.on_import(parent, name)
-        return orig_import(name, globals, locals, fromlist, level)
-
-    builtins.__import__ = hooked_import
+    """
+    Install a unified import hook and instrumentation finder/loader.
+    - Uses MetaPathFinder to log and instrument target modules on first load.
+    - Falls back to a __import__ wrapper to catch cached or C-level imports.
+    """
+    # 1) Insert unified finder for logging & instrumentation
     sys.meta_path.insert(0, InstrumentFinder(hook_mgr, targets))
 
+    # 2) Fallback for imports not seen by the finder (e.g., cached or C extensions)
+    orig_import = builtins.__import__
+    def fallback_import(name, globals=None, locals=None, fromlist=(), level=0):
+        parent = globals.get('__name__') if globals else None
+        parent_mod = parent or '__main__'
+
+        # print(f"📦 [__import__ fallback] {parent_mod} → import {name}")
+        # Record import only if finder did not log it
+        if name not in hook_mgr.dep_graph.get(parent_mod, set()):
+            hook_mgr.on_import(parent, name)
+        return orig_import(name, globals, locals, fromlist, level)
+    builtins.__import__ = fallback_import
+
+    # 3) Preserve optional import_module instrumentation
     if replace_import_module:
         real_import_module = importlib.import_module
-
         def instrumented_import_module(name, package=None):
             module = real_import_module(name, package)
             for attr in dir(module):
@@ -128,5 +189,66 @@ def install_import_hook(
                     except Exception:
                         pass
             return module
-
         importlib.import_module = instrumented_import_module
+
+def rewrap_existing_targets(hook_mgr: HookManager, targets: List[str]):
+    """
+    Go through already-loaded target modules in sys.modules and wrap their top-level functions.
+    This ensures instrumentation even for modules that were imported before the hooks were installed.
+    """
+    for name in targets:
+        mod = sys.modules.get(name)
+        if not mod:
+            continue
+        for attr in dir(mod):
+            if not attr.startswith('__'):
+                try:
+                    raw = getattr(mod, attr)
+                    wrapped = wrap_value(raw, name, hook_mgr)
+                    setattr(mod, attr, wrapped)
+                except Exception:
+                    pass
+
+
+#     def find_spec(self, fullname, path, target=None):
+#         spec = importlib.machinery.PathFinder.find_spec(fullname, path)
+#         if spec:
+#             if self._matches(fullname):
+#                 spec.loader = InstrumentLoader(self.hook_mgr, spec.loader)
+#         return spec
+
+
+# def install_import_hook(
+#     hook_mgr: HookManager,
+#     targets: List[str],
+#     replace_import_module: bool = True
+# ) -> None:
+#     orig_import = builtins.__import__
+
+#     def hooked_import(name, globals=None, locals=None, fromlist=(), level=0):
+#         parent = globals.get('__name__') if globals else None
+#         hook_mgr.on_import(parent, name)
+#         return orig_import(name, globals, locals, fromlist, level)
+
+#     builtins.__import__ = hooked_import
+#     sys.meta_path.insert(0, InstrumentFinder(hook_mgr, targets))
+
+#     if replace_import_module:
+#         real_import_module = importlib.import_module
+
+#         def instrumented_import_module(name, package=None):
+#             module = real_import_module(name, package)
+#             for attr in dir(module):
+#                 if not attr.startswith('__'):
+#                     try:
+#                         raw = getattr(module, attr)
+#                         setattr(
+#                             module,
+#                             attr,
+#                             wrap_value(raw, module.__name__, hook_mgr)
+#                         )
+#                     except Exception:
+#                         pass
+#             return module
+
+#         importlib.import_module = instrumented_import_module
