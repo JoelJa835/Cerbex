@@ -1,0 +1,47 @@
+{
+  "allowlist": {
+    "__main__": [
+      "string_utils"
+    ],
+    "atexit": [
+      "register"
+    ],
+    "__builtins__": [
+      "__exit__",
+      "add",
+      "clear",
+      "difference_update",
+      "get",
+      "items",
+      "locked",
+      "release",
+      "setdefault",
+      "upper",
+      "write"
+    ],
+    "builtins": [
+      "__import__",
+      "getattr",
+      "hasattr",
+      "id",
+      "isinstance",
+      "len",
+      "print",
+      "sorted"
+    ],
+    "string_utils": [
+      "concat",
+      "count_chars",
+      "shout"
+    ],
+    "_thread": [
+      "get_ident"
+    ],
+    "_io": [
+      "open"
+    ],
+    "_json": [
+      "encode_basestring_ascii"
+    ]
+  }
+}

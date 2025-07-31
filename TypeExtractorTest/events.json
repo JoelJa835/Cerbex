@@ -1,0 +1,71 @@
+{
+  "atexit": {
+    "call:register": true,
+    "return:register": true
+  },
+  "__builtins__": {
+    "call:get": true,
+    "call:release": true,
+    "call:__exit__": true,
+    "call:items": true,
+    "call:add": true,
+    "return:add": true,
+    "call:locked": true,
+    "return:get": true,
+    "call:write": true,
+    "return:write": true,
+    "return:setdefault": true,
+    "return:__exit__": true,
+    "call:difference_update": true,
+    "call:clear": true,
+    "return:clear": true,
+    "return:locked": true,
+    "call:setdefault": true,
+    "return:release": true,
+    "return:items": true,
+    "return:upper": true,
+    "call:upper": true,
+    "return:difference_update": true
+  },
+  "__main__": {
+    "import:string_utils": true
+  },
+  "builtins": {
+    "call:sorted": true,
+    "call:id": true,
+    "call:print": true,
+    "return:id": true,
+    "call:len": true,
+    "return:hasattr": true,
+    "return:sorted": true,
+    "return:getattr": true,
+    "return:isinstance": true,
+    "call:hasattr": true,
+    "call:getattr": true,
+    "return:__import__": true,
+    "call:__import__": true,
+    "call:isinstance": true,
+    "return:print": true,
+    "return:len": true
+  },
+  "string_utils": {
+    "call:count_chars": true,
+    "return:count_chars": true,
+    "call:shout": true,
+    "call:concat": true,
+    "return:concat": true,
+    "return:shout": true
+  },
+  "_thread": {
+    "return:get_ident": true,
+    "call:get_ident": true
+  },
+  "_io": {
+    "return:open": true,
+    "call:open": true
+  },
+  "_json": {
+    "return:encode_basestring_ascii": true,
+    "call:encode_basestring_ascii": true
+  }
+}

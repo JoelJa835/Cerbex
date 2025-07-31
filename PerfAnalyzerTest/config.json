@@ -1,0 +1,7 @@
+{
+    "targets": [
+      "image_resizer",
+      "PIL.Image",
+      "PIL.ImageFile"
+    ]
+  }

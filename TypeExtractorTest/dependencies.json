@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "__main__": [
+      "string_utils"
+    ]
+  }
+}
