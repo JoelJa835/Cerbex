@@ -16,17 +16,26 @@ class PerfAnalyzer(Analysis):
     def __init__(self, outfile: str = "perf.log") -> None:
         self.outfile = outfile
         self._local = threading.local()
+        self.exclude_prefixes = {
+                'builtins', '__builtins__', 'fastapi', 'pydantic', 
+                'starlette'
+            }
+        
         # Buffer for (module.func, duration) tuples
         self._buffer: List[Tuple[str, float]] = []
         # Register dump at program exit
         atexit.register(self._dump)
 
     def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
+        if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
+            return
         stack = getattr(self._local, "stack", [])
         stack.append(time.time())
         self._local.stack = stack
 
     def on_return(self, module: str, func: str, result: Any) -> None:
+        if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
+            return
         stack = getattr(self._local, "stack", [])
         if not stack:
             return
@@ -55,12 +64,16 @@ class PerfAnalyzer(Analysis):
 
 
 class TypeExtractor(Analysis):
-    def __init__(self, outfile: str = "types.log", allowed_modules=None) -> None:
+    def __init__(self, outfile: str = "types.log") -> None:
         self._f = open(outfile, "a")
-        self.allowed = set(allowed_modules) if allowed_modules else None
+        self.exclude_prefixes = {
+                'builtins', '__builtins__', 'fastapi', 'pydantic', 
+                'starlette'
+            }
 
     def on_return(self, module: str, func: str, result: Any) -> None:
-        if self.allowed and module not in self.allowed:
+        # Skip library internals, only log user code
+        if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
             return
         self._f.write(f"[Type] {module}.{func} returned {type(result).__name__}\n")
         self._f.flush()
@@ -73,15 +86,23 @@ class AttrAccessAnalyzer(Analysis):
 
     def __init__(self, outfile: str = "attr_access.log") -> None:
         self._f = open(outfile, "a")
+        # self.exclude_prefixes = {
+        #         'builtins', '__builtins__', 'fastapi', 'pydantic', 
+        #         'starlette'
+        #     }
         # (Other initialization as needed)
 
     def on_attr_read(self, module: str, obj: any, attr: str) -> None:
         # Record read access
+        # if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
+        #     return
         self._f.write(f"READ {module} | {obj!r}.{attr}\n")
         self._f.flush()
 
     def on_attr_write(self, module: str, obj: any, attr: str, value: any) -> None:
         # Record write access
+        # if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
+        #     return
         self._f.write(f"WRITE {module} | {obj!r}.{attr} = {value!r}\n")
         self._f.flush()
 

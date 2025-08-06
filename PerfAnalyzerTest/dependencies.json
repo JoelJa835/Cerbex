@@ -1,14 +1,11 @@
 {
   "dependencies": {
     "__main__": [
-      "test_module"
+      "image_resizer"
     ],
     "importlib._bootstrap_external": [
       "_io",
       "tokenize"
-    ],
-    "asyncio.events": [
-      ""
     ]
   }
 }

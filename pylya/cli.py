@@ -1,16 +1,18 @@
+#cli.py
 import sys
 import runpy
 import argparse
 from pathlib import Path
 
 from pylya.hook_loader import install_hooks
-from pylya.analysis import PerfAnalyzer, TypeExtractor
+from pylya.analysis import PerfAnalyzer, TypeExtractor, 
 
 __version__ = "0.1.0"
 
 ANALYSIS_MAP = {
     "perf": PerfAnalyzer,
     "types": TypeExtractor,
+    "attr": AttrAccessAnalyzer
 }
 
 

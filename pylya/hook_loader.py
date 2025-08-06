@@ -1,4 +1,3 @@
-
 # File: hook_loader.py
 """
 Standalone hook loader for your project. Import this at startup to enable Lyapy instrumentation.
@@ -9,7 +8,7 @@ import json
 from typing import Dict, List, Tuple
 
 from pylya.hook_manager import HookManager ,Analysis
-from pylya.importer import install_import_hook, rewrap_existing_targets
+from pylya.importer import install_import_hook, rewrap_existing_targets, install_decorator_interception
 
 
 
@@ -61,6 +60,7 @@ def install_hooks(
     # 4) install hooks
     install_import_hook(hook_mgr, targets)
     rewrap_existing_targets(hook_mgr, targets)
+    install_decorator_interception(hook_mgr, targets)
     sys.setprofile(hook_mgr.c_profile)
 
     # 5) register the exit handler
@@ -104,6 +104,3 @@ def install_hooks(
 #                     a.on_attr_read(module, None, name)
 #                 elif kind == 'write':
 #                     a.on_attr_write(module, None, name, None)
-
-
-

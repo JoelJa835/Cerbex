@@ -5,25 +5,6 @@ from typing import Any, Callable
 from pylya.hook_manager import HookManager
 
 
-# class AttrProxy:
-#     def __init__(self, obj, module: str, hook_mgr):
-#         object.__setattr__(self, "_obj", obj)
-#         object.__setattr__(self, "_mod", module)
-#         object.__setattr__(self, "_hook", hook_mgr)
-
-#     def __getattr__(self, name):
-#         print(f"[DEBUG] AttrProxy GET {name}")
-#         value = getattr(self._obj, name)
-#         self._hook.on_attr_read(self._mod, self._obj, name)
-#         return value
-
-#     def __setattr__(self, name, value):
-#         print(f"[DEBUG] AttrProxy SET {name}")
-#         setattr(self._obj, name, value)
-#         self._hook.on_attr_write(self._mod, self._obj, name, value)
-
-#     def __repr__(self):
-#         return f"<AttrProxy of {repr(self._obj)}>"
 
 
 
@@ -103,6 +84,78 @@ def make_wrapper(
 
         sync_wrapper.__wrapped__ = fn
         return sync_wrapper
+
+# def make_wrapper(
+#     fn: Callable,
+#     module: str,
+#     hook_mgr: HookManager,
+#     is_async: bool
+# ) -> Callable:
+#     _local     = hook_mgr._local
+#     _on_call   = hook_mgr.on_call
+#     _on_return = hook_mgr.on_return
+
+#     def ensure_hook_flag():
+#         if not hasattr(_local, 'in_hook'):
+#             _local.in_hook = False
+
+#     if is_async:
+#         @wraps(fn)
+#         async def async_wrapper(*args, **kwargs):
+#             ensure_hook_flag()
+#             if not _local.in_hook:
+#                 _local.in_hook = True
+#                 try:
+#                     _on_call(module, fn.__name__, args, kwargs)
+#                 finally:
+#                     _local.in_hook = False
+
+#             # print(f"[DEBUG] entering (async) {module}.{fn.__name__}")
+#             result = await fn(*args, **kwargs)
+#             # print(f"[DEBUG] exiting  (async) {module}.{fn.__name__} → {type(result).__name__}")
+
+#             ensure_hook_flag()
+#             if not _local.in_hook:
+#                 _local.in_hook = True
+#                 try:
+#                     _on_return(module, fn.__name__, result)
+#                 finally:
+#                     _local.in_hook = False
+
+#             return result
+
+#         # ← Must set __wrapped__ and return the wrapper
+#         async_wrapper.__wrapped__ = fn
+#         return async_wrapper
+
+#     else:
+#         @wraps(fn)
+#         def sync_wrapper(*args, **kwargs):
+#             ensure_hook_flag()
+#             if not _local.in_hook:
+#                 _local.in_hook = True
+#                 try:
+#                     _on_call(module, fn.__name__, args, kwargs)
+#                 finally:
+#                     _local.in_hook = False
+
+#             # print(f"[DEBUG] entering {module}.{fn.__name__}")
+#             result = fn(*args, **kwargs)
+#             # print(f"[DEBUG] exiting {module}.{fn.__name__} → {type(result).__name__}")
+
+#             ensure_hook_flag()
+#             if not _local.in_hook:
+#                 _local.in_hook = True
+#                 try:
+#                     _on_return(module, fn.__name__, result)
+#                 finally:
+#                     _local.in_hook = False
+
+#             return result
+
+#         sync_wrapper.__wrapped__ = fn
+#         return sync_wrapper
+
 
 
 

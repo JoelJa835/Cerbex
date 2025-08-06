@@ -1,5 +1,1 @@
-{
-    "targets": [
-      "string_utils"
-    ]
-  }
+{"targets": ["test_module", "test_module.*"]}

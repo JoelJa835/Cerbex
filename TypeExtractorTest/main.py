@@ -1,4 +1,3 @@
-import string_utils
 from pylya.hook_loader import install_hooks
 from pylya.analysis import TypeExtractor
 

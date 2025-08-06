@@ -1,0 +1,142 @@
+{
+  "atexit": {
+    "call:register": true,
+    "return:register": true
+  },
+  "__builtins__": {
+    "call:write": true,
+    "call:rpartition": true,
+    "return:decode": true,
+    "call:readline": true,
+    "return:write": true,
+    "return:items": true,
+    "call:difference_update": true,
+    "call:decode": true,
+    "return:rstrip": true,
+    "call:rfind": true,
+    "return:rpartition": true,
+    "return:__exit__": true,
+    "return:append": true,
+    "call:__exit__": true,
+    "call:setdefault": true,
+    "return:locked": true,
+    "return:readline": true,
+    "call:flush": true,
+    "call:get": true,
+    "return:difference_update": true,
+    "return:rfind": true,
+    "return:endswith": true,
+    "call:pop": true,
+    "return:read": true,
+    "call:add": true,
+    "call:rstrip": true,
+    "call:clear": true,
+    "call:endswith": true,
+    "return:remove": true,
+    "return:update": true,
+    "return:get": true,
+    "return:__new__": true,
+    "return:startswith": true,
+    "call:locked": true,
+    "return:join": true,
+    "return:clear": true,
+    "return:add": true,
+    "return:release": true,
+    "return:pop": true,
+    "call:remove": true,
+    "call:append": true,
+    "call:match": true,
+    "return:setdefault": true,
+    "call:release": true,
+    "return:match": true,
+    "call:__new__": true,
+    "call:startswith": true,
+    "call:read": true,
+    "call:join": true,
+    "return:flush": true,
+    "call:items": true,
+    "call:update": true
+  },
+  "__main__": {
+    "import:image_resizer": true
+  },
+  "builtins": {
+    "return:hasattr": true,
+    "call:max": true,
+    "call:isinstance": true,
+    "return:getattr": true,
+    "call:__build_class__": true,
+    "call:sorted": true,
+    "return:any": true,
+    "return:__build_class__": true,
+    "call:print": true,
+    "return:setattr": true,
+    "return:print": true,
+    "call:hasattr": true,
+    "return:sorted": true,
+    "return:exec": true,
+    "return:__import__": true,
+    "call:__import__": true,
+    "return:compile": true,
+    "return:id": true,
+    "call:any": true,
+    "return:isinstance": true,
+    "return:len": true,
+    "return:max": true,
+    "call:exec": true,
+    "call:id": true,
+    "call:setattr": true,
+    "call:getattr": true,
+    "call:len": true,
+    "call:compile": true
+  },
+  "_imp": {
+    "return:acquire_lock": true,
+    "return:release_lock": true,
+    "call:release_lock": true,
+    "call:acquire_lock": true
+  },
+  "_thread": {
+    "return:get_ident": true,
+    "return:allocate_lock": true,
+    "call:get_ident": true,
+    "call:allocate_lock": true
+  },
+  "_weakref": {
+    "call:_remove_dead_weakref": true,
+    "return:_remove_dead_weakref": true
+  },
+  "posix": {
+    "call:fspath": true,
+    "call:listdir": true,
+    "call:stat": true,
+    "return:fspath": true,
+    "return:listdir": true,
+    "return:stat": true
+  },
+  "_io": {
+    "return:open": true,
+    "call:open_code": true,
+    "call:open": true,
+    "return:open_code": true
+  },
+  "importlib._bootstrap_external": {
+    "import:tokenize": true,
+    "import:_io": true
+  },
+  "image_resizer": {
+    "call:show": true,
+    "read:show": true,
+    "return:__init__": true,
+    "call:__init__": true,
+    "write:value": true,
+    "call:run": true,
+    "return:run": true,
+    "read:value": true,
+    "return:show": true
+  },
+  "_json": {
+    "call:encode_basestring_ascii": true,
+    "return:encode_basestring_ascii": true
+  }
+}

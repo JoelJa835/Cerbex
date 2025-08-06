@@ -210,6 +210,7 @@ def rewrap_existing_targets(hook_mgr: HookManager, targets: List[str]):
                     pass
 
 
+
 #     def find_spec(self, fullname, path, target=None):
 #         spec = importlib.machinery.PathFinder.find_spec(fullname, path)
 #         if spec:
@@ -252,3 +253,173 @@ def rewrap_existing_targets(hook_mgr: HookManager, targets: List[str]):
 #             return module
 
 #         importlib.import_module = instrumented_import_module
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # Cache: original function → wrapper
+# _wrap_cache: "WeakKeyDictionary[FunctionType, FunctionType]" = WeakKeyDictionary()
+# # Primitives we don’t instrument
+# PRIMITIVES = (str, int, float, bool, bytes, type(None))
+
+
+# # def wrap_value(val, module_name: str, hook_mgr: HookManager):
+# #     try:
+# #         # primitives & modules stay
+# #         if isinstance(val, PRIMITIVES) or isinstance(val, ModuleType):
+# #             return val
+
+# #         if inspect.isclass(val) and val.__module__ == module_name:
+# #             orig_cls = val
+
+# #             # 1) Your existing recursive wrap of methods & nested classes
+# #             for attr_name, attr_val in list(orig_cls.__dict__.items()):
+# #                 wrapped = wrap_value(attr_val, module_name, hook_mgr)
+# #                 if wrapped is not attr_val:
+# #                     setattr(orig_cls, attr_name, wrapped)
+
+# #             # 2) Inject instance-level attribute-access hooks
+# #             module_for_hooks = orig_cls.__module__
+
+# #             def __getattribute__(self, name):
+# #                 hook_mgr.on_attr_read(module_for_hooks, self, name)
+# #                 return super(orig_cls, self).__getattribute__(name)
+
+# #             def __setattr__(self, name, value):
+# #                 hook_mgr.on_attr_write(module_for_hooks, self, name, value)
+# #                 return super(orig_cls, self).__setattr__(name, value)
+
+# #             setattr(orig_cls, "__getattribute__", __getattribute__)
+# #             setattr(orig_cls, "__setattr__", __setattr__)
+
+# #             return orig_cls
+
+# #         # if inspect.isclass(val) and val.__module__ == module_name:
+# #         #     for attr_name, attr_val in list(val.__dict__.items()):
+# #         #         wrapped = wrap_value(attr_val, module_name, hook_mgr)
+# #         #         if wrapped is not attr_val:
+# #         #             setattr(val, attr_name, wrapped)
+# #         #     return val
+       
+    
+
+# #         # 2) Functions & bound methods
+# #         if isinstance(val, (FunctionType, MethodType)) and val.__module__.startswith(module_name):
+            
+# #             cached = _wrap_cache.get(val)
+# #             if cached is not None:
+# #                 return cached
+
+# #             if val.__name__ in ('__repr__', '__str__') or hasattr(val, '__wrapped__'):
+# #                 return val
+
+# #             is_async = inspect.iscoroutinefunction(val)
+# #             wrapper = make_wrapper(val, module_name, hook_mgr, is_async)
+# #             _wrap_cache[val] = wrapper
+# #             return wrapper
+
+# #         # 3) Everything else
+# #         return val
+# #     except Exception:
+# #         return val
+# def wrap_value(val, module_name: str, hook_mgr: HookManager):
+#     try:
+#         # ❗ Skip if this module is excluded
+#         for pat in hook_mgr.excludes:
+#             if module_name == pat or (pat.endswith("*") and module_name.startswith(pat[:-1])):
+#                 return val
+#         # 0) Primitives & modules: skip
+#         if isinstance(val, PRIMITIVES) or isinstance(val, ModuleType):
+#             return val
+
+#         # 1) Wrap classes
+#         if inspect.isclass(val) and val.__module__ == module_name:
+#             orig_cls = val
+
+#             # Wrap class methods / attributes
+#             for attr_name, attr_val in list(orig_cls.__dict__.items()):
+#                 wrapped = wrap_value(attr_val, module_name, hook_mgr)
+#                 if wrapped is not attr_val:
+#                     setattr(orig_cls, attr_name, wrapped)
+
+#             # Inject attribute read/write hooks
+#             module_for_hooks = orig_cls.__module__
+
+#             def __getattribute__(self, name):
+#                 hook_mgr.on_attr_read(module_for_hooks, self, name)
+#                 return super(orig_cls, self).__getattribute__(name)
+
+#             def __setattr__(self, name, value):
+#                 hook_mgr.on_attr_write(module_for_hooks, self, name, value)
+#                 return super(orig_cls, self).__setattr__(name, value)
+
+#             setattr(orig_cls, "__getattribute__", __getattribute__)
+#             setattr(orig_cls, "__setattr__", __setattr__)
+
+#             return orig_cls
+
+#         # 2) Wrap functions & methods (including decorated ones)
+#         if isinstance(val, (FunctionType, MethodType)):
+#             # Unwrap if decorated (e.g. @app.get)
+#             original = getattr(val, "__wrapped__", val)
+
+#             # Only wrap if it's from this module
+#             mod = getattr(original, "__module__", None)
+#             if not mod or not mod.startswith(module_name):
+#                 return val
+#             # if module_name not in getattr(original, "__module__", ""):
+#             #     return val
+
+
+#             # Skip dunder repr/str
+#             if original.__name__ in ("__repr__", "__str__"):
+#                 return val
+
+#             # Avoid double-wrapping
+#             cached = _wrap_cache.get(original)
+#             if cached is not None:
+#                 return cached
+
+#             is_async = inspect.iscoroutinefunction(original)
+#             wrapper = make_wrapper(original, module_name, hook_mgr, is_async)
+#             _wrap_cache[original] = wrapper
+#             # print(f"[WRAP] Wrapped {original.__module__}.{original.__name__} (async={is_async})")
+
+#             # Preserve signature & __wrapped__
+#             if hasattr(val, "__signature__"):
+#                 wrapper.__signature__ = val.__signature__
+#             wrapper.__wrapped__ = original
+
+#             return wrapper
+
+#         # 3) Everything else: return unchanged
+#         return val
+
+#     except Exception:
+#         return val
+
+
+
+
+
+
+
+

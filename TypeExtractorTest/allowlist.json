@@ -1,47 +1,18 @@
 {
   "allowlist": {
     "__main__": [
-      "string_utils"
+      "test_module"
     ],
-    "atexit": [
-      "register"
+    "importlib._bootstrap_external": [
+      "_io",
+      "tokenize"
     ],
-    "__builtins__": [
-      "__exit__",
-      "add",
-      "clear",
-      "difference_update",
-      "get",
-      "items",
-      "locked",
-      "release",
-      "setdefault",
-      "upper",
-      "write"
+    "asyncio.events": [
+      ""
     ],
-    "builtins": [
-      "__import__",
-      "getattr",
-      "hasattr",
-      "id",
-      "isinstance",
-      "len",
-      "print",
-      "sorted"
-    ],
-    "string_utils": [
-      "concat",
-      "count_chars",
-      "shout"
-    ],
-    "_thread": [
-      "get_ident"
-    ],
-    "_io": [
-      "open"
-    ],
-    "_json": [
-      "encode_basestring_ascii"
+    "test_module": [
+      "get_data",
+      "read_items"
     ]
   }
 }

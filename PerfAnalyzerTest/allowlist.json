@@ -67,6 +67,7 @@
     ],
     "posix": [
       "fspath",
+      "listdir",
       "stat"
     ],
     "_io": [
@@ -74,7 +75,9 @@
       "open_code"
     ],
     "image_resizer": [
-      "run"
+      "__init__",
+      "run",
+      "show"
     ],
     "_json": [
       "encode_basestring_ascii"
