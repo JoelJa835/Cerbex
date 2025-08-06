@@ -1,4 +1,0 @@
-WRITE image_resizer | <image_resizer.MyClass object at 0x7fe70090ed50>.value = 42
-WRITE image_resizer | <image_resizer.MyClass object at 0x7fe70090ed50>.value = 100
-READ image_resizer | <image_resizer.MyClass object at 0x7fe70090ed50>.show
-READ image_resizer | <image_resizer.MyClass object at 0x7fe70090ed50>.value
