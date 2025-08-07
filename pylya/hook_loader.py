@@ -8,7 +8,7 @@ import json
 from typing import Dict, List, Tuple
 
 from pylya.hook_manager import HookManager ,Analysis
-from pylya.importer import install_import_hook, rewrap_existing_targets, install_decorator_interception
+from pylya.importer import install_import_hook, rewrap_existing_targets
 
 
 
@@ -60,7 +60,7 @@ def install_hooks(
     # 4) install hooks
     install_import_hook(hook_mgr, targets)
     rewrap_existing_targets(hook_mgr, targets)
-    install_decorator_interception(hook_mgr, targets)
+    # install_decorator_interception(hook_mgr, targets)
     sys.setprofile(hook_mgr.c_profile)
 
     # 5) register the exit handler
