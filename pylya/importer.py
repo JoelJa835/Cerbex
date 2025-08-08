@@ -19,71 +19,72 @@ _wrap_cache: "WeakKeyDictionary[FunctionType, FunctionType]" = WeakKeyDictionary
 # Primitives we don’t instrument
 PRIMITIVES = (str, int, float, bool, bytes, type(None))
 
+class LazyWrapper:
+            def __init__(self, name, orig_val, module_name, hook_mgr):
+                self.name = name
+                self.orig_val = orig_val
+                self.module_name = module_name
+                self.hook_mgr = hook_mgr
+                self._wrapped = None
+
+            def __get__(self, instance, owner):
+                if self._wrapped is None:
+                    self._wrapped = wrap_value(self.orig_val, self.module_name, self.hook_mgr)
+                return self._wrapped if instance is None else self._wrapped.__get__(instance, owner)
+
 
 def wrap_value(val, module_name: str, hook_mgr: HookManager):
 
     # primitives & modules stay
     if isinstance(val, PRIMITIVES) or isinstance(val, ModuleType):
         return val
+    try:
 
-    # # 1) If this is a class defined in our module, wrap its members
-    # if inspect.isclass(val) and val.__module__ == module_name:
-    #     for attr_name, attr_val in list(val.__dict__.items()):
-    #         wrapped = wrap_value(attr_val, module_name, hook_mgr)
-    #         if wrapped is not attr_val:
-    #             setattr(val, attr_name, wrapped)
-    #     return val
-      # 1) If this is a class defined in our target module, rebuild it
-    if inspect.isclass(val) and val.__module__ == module_name:
-        orig_cls = val
-
-        # 1a) Create a metaclass that intercepts class‐level get/sets
-        class AttrMeta(type(orig_cls)):
-            def __getattribute__(cls, name):
-                hook_mgr.on_attr_read(orig_cls.__module__, cls, name)
-                return super().__getattribute__(name)
-
-            def __setattr__(cls, name, value):
-                hook_mgr.on_attr_write(orig_cls.__module__, cls, name, value)
-                return super().__setattr__(name, value)
-
-        # 1b) Rebuild the class under AttrMeta
-        Wrapped = AttrMeta(
-            orig_cls.__name__,
-            orig_cls.__bases__,
-            dict(orig_cls.__dict__),
-        )
-
-        # 1c) Inject instance‐level hooks into Wrapped
-        def __getattribute__(self, name):
-            hook_mgr.on_attr_read(orig_cls.__module__, self, name)
-            return super(Wrapped, self).__getattribute__(name)
-
-        def __setattr__(self, name, value):
-            hook_mgr.on_attr_write(orig_cls.__module__, self, name, value)
-            return super(Wrapped, self).__setattr__(name, value)
-
-        Wrapped.__getattribute__ = __getattribute__
-        Wrapped.__setattr__      = __setattr__
-
-        return Wrapped
-
-    # 2) Functions & bound methods
-    if isinstance(val, (FunctionType, MethodType)) and val.__module__.startswith(module_name):
-        # print(f"🔀 wrap_value called for module_name='{module_name}', val.__module__='{val.__module__}', fn={val.__name__}")
-        cached = _wrap_cache.get(val)
-        if cached is not None:
-            return cached
-
-        if val.__name__ in ('__repr__', '__str__') or hasattr(val, '__wrapped__'):
+        if inspect.isclass(val) and val.__module__ == module_name:
+            for attr_name, attr_val in list(val.__dict__.items()):
+                if should_wrap(attr_name, attr_val):  # filtering logic
+                    setattr(val, attr_name, LazyWrapper(attr_name, attr_val, module_name, hook_mgr))
             return val
+        # if inspect.isclass(val) and val.__module__ == module_name:
+        #     for attr_name, attr_val in val.__dict__.items():
+        #         # Skip dunders and built-ins
+        #         if attr_name.startswith("__") and attr_name.endswith("__"):
+        #             continue
+        #         # Skip attributes from other modules
+        #         if getattr(attr_val, "__module__", module_name) != module_name:
+        #             continue
+                
+        #         wrapped = wrap_value(attr_val, module_name, hook_mgr)
+        #         if wrapped is not attr_val:
+        #             setattr(val, attr_name, wrapped)
+        #     return val
 
-        is_async = inspect.iscoroutinefunction(val)
-        wrapper = make_wrapper(val, module_name, hook_mgr, is_async)
-        _wrap_cache[val] = wrapper
-        return wrapper
+        # 2) Functions & bound methods
+        if isinstance(val, (FunctionType, MethodType)) and val.__module__.startswith(module_name):
+            # print(f"🔀 wrap_value called for module_name='{module_name}', val.__module__='{val.__module__}', fn={val.__name__}")
+            cached = _wrap_cache.get(val)
+            if cached is not None:
+                return cached
 
-    # 3) Everything else
+            if val.__name__ in ('__repr__', '__str__') or hasattr(val, '__wrapped__'):
+                return val
+
+            is_async = inspect.iscoroutinefunction(val)
+            wrapper = make_wrapper(val, module_name, hook_mgr, is_async)
+             # ✅ Preserve __name__, __qualname__, __doc__, __annotations__, __signature__, etc.
+            wrapper = functools.update_wrapper(raw_wrapper, val)
+             # ✅ Explicitly preserve __signature__
+            try:
+                wrapper.__signature__ = inspect.signature(val)
+            except Exception:
+                pass
+            _wrap_cache[val] = wrapper
+            return wrapper
+
+    except:
+        # If wrapping fails for any reason, return original
+        pass
+
     return val
 
 

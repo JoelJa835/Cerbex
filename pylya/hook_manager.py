@@ -12,13 +12,19 @@ import threading
 from typing import Any, Dict, List, Optional, Set
 
 def safe_hook(fn):
-    """Decorator: run hook method, but catch+ignore all exceptions."""
+    """
+    Ultra-defensive decorator that handles ANY exception type, including:
+    - TypeError from malformed exception classes
+    - SystemExit, KeyboardInterrupt
+    - Custom exceptions that don't inherit properly
+    """
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
-        except Exception:
-            # swallow everything
+        except:
+            # Catch literally everything - even malformed exception types
+            # This uses bare except: which catches everything including SystemExit
             return None
     return wrapper
 

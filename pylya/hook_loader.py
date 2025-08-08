@@ -60,7 +60,6 @@ def install_hooks(
     # 4) install hooks
     install_import_hook(hook_mgr, targets)
     rewrap_existing_targets(hook_mgr, targets)
-    # install_decorator_interception(hook_mgr, targets)
     sys.setprofile(hook_mgr.c_profile)
 
     # 5) register the exit handler
