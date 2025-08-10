@@ -67,9 +67,9 @@ def make_wrapper(
                 finally:
                     _local.in_hook = False
 
-            print(f"[DEBUG] entering {module}.{fn.__name__}")   # ← add this
+            # print(f"[DEBUG] entering {module}.{fn.__name__}")   # ← add this
             result = fn(*args, **kwargs)
-            print(f"[DEBUG] exiting {module}.{fn.__name__} → {type(result).__name__}")
+            # print(f"[DEBUG] exiting {module}.{fn.__name__} → {type(result).__name__}")
 
             # Record exit without blocking nested calls
             ensure_hook_flag()

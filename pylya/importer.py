@@ -5,6 +5,7 @@ import importlib
 import importlib.abc
 import importlib.machinery
 import inspect
+import functools
 from types import ModuleType, FunctionType, MethodType
 from typing import List, Any
 from weakref import WeakKeyDictionary
