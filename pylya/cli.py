@@ -5,14 +5,13 @@ import argparse
 from pathlib import Path
 
 from pylya.hook_loader import install_hooks
-from pylya.analysis import PerfAnalyzer, TypeExtractor, AttrAccessAnalyzer
+from pylya.analysis import PerfAnalyzer, TypeExtractor
 
 __version__ = "0.1.0"
 
 ANALYSIS_MAP = {
     "perf": PerfAnalyzer,
-    "types": TypeExtractor,
-    "attr": AttrAccessAnalyzer
+    "types": TypeExtractor
 }
 
 

@@ -6,7 +6,7 @@ import importlib.abc
 import importlib.machinery
 import inspect
 from types import ModuleType, FunctionType, MethodType
-from typing import List
+from typing import List, Any
 from weakref import WeakKeyDictionary
 
 from pylya.hook_manager import HookManager
@@ -20,18 +20,41 @@ _wrap_cache: "WeakKeyDictionary[FunctionType, FunctionType]" = WeakKeyDictionary
 PRIMITIVES = (str, int, float, bool, bytes, type(None))
 
 class LazyWrapper:
-            def __init__(self, name, orig_val, module_name, hook_mgr):
-                self.name = name
-                self.orig_val = orig_val
-                self.module_name = module_name
-                self.hook_mgr = hook_mgr
-                self._wrapped = None
+    def __init__(self, name, orig_val, module_name, hook_mgr):
+        self.name = name
+        self.orig_val = orig_val
+        self.module_name = module_name
+        self.hook_mgr = hook_mgr
+        self._wrapped = None
 
-            def __get__(self, instance, owner):
-                if self._wrapped is None:
-                    self._wrapped = wrap_value(self.orig_val, self.module_name, self.hook_mgr)
-                return self._wrapped if instance is None else self._wrapped.__get__(instance, owner)
+    def __get__(self, instance, owner):
+        if self._wrapped is None:
+            self._wrapped = wrap_value(self.orig_val, self.module_name, self.hook_mgr)
+        return self._wrapped if instance is None else self._wrapped.__get__(instance, owner)
 
+def should_wrap(attr_name: str, attr_val: Any) -> bool:
+    """
+    Determine if an attribute should be wrapped with instrumentation.
+    Returns True for functions/methods that should be monitored.
+    """
+    # Skip dunder methods and private attributes
+    if attr_name.startswith('__'):
+        return False
+    
+    # Skip class attributes, descriptors, and other non-callable items
+    if not callable(attr_val):
+        return False
+    
+    # Skip already wrapped functions
+    if hasattr(attr_val, '__wrapped__'):
+        return False
+    
+    # Skip built-in functions (they'll be caught by sys.setprofile anyway)
+    if isinstance(attr_val, type(len)):  # built-in function type
+        return False
+    
+    # Only wrap actual functions and methods
+    return isinstance(attr_val, (FunctionType, MethodType))
 
 def wrap_value(val, module_name: str, hook_mgr: HookManager):
 
@@ -72,7 +95,7 @@ def wrap_value(val, module_name: str, hook_mgr: HookManager):
             is_async = inspect.iscoroutinefunction(val)
             wrapper = make_wrapper(val, module_name, hook_mgr, is_async)
              # ✅ Preserve __name__, __qualname__, __doc__, __annotations__, __signature__, etc.
-            wrapper = functools.update_wrapper(raw_wrapper, val)
+            wrapper = functools.update_wrapper(wrapper, val)
              # ✅ Explicitly preserve __signature__
             try:
                 wrapper.__signature__ = inspect.signature(val)

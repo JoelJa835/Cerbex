@@ -82,35 +82,6 @@ class TypeExtractor(Analysis):
         self._f.close()
 
 
-class AttrAccessAnalyzer(Analysis):
-
-    def __init__(self, outfile: str = "attr_access.log") -> None:
-        self._f = open(outfile, "a")
-        # self.exclude_prefixes = {
-        #         'builtins', '__builtins__', 'fastapi', 'pydantic', 
-        #         'starlette'
-        #     }
-        # (Other initialization as needed)
-
-    def on_attr_read(self, module: str, obj: any, attr: str) -> None:
-        # Record read access
-        # if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
-        #     return
-        self._f.write(f"READ {module} | {obj!r}.{attr}\n")
-        self._f.flush()
-
-    def on_attr_write(self, module: str, obj: any, attr: str, value: any) -> None:
-        # Record write access
-        # if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
-        #     return
-        self._f.write(f"WRITE {module} | {obj!r}.{attr} = {value!r}\n")
-        self._f.flush()
-
-    def __del__(self):
-        try:
-            self._f.close()
-        except Exception:
-            pass
 
 
 

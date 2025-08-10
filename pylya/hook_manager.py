@@ -35,9 +35,7 @@ class Analysis:
     def on_import(self, parent: Optional[str], name: str) -> None: ...
     def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None: ...
     def on_return(self, module: str, func: str, result: Any) -> None: ...
-    def on_attr_read(self, module: str, obj: Any, attr: str) -> None: ...
-    def on_attr_write(self, module: str, obj: Any, attr: str, value: Any) -> None: ...
-
+    
 class HookManager:
     def __init__(
         self,
@@ -108,85 +106,6 @@ class HookManager:
     def _safe_on_return(self, module: str, func: str, result: Any) -> None:
         for a in self.analyses:
             a.on_return(module, func, result)
-
-
-    # -------------------------------
-    # Attribute-read hook + safe wrapper
-    # -------------------------------
-    def on_attr_read(self, module: str, obj: Any, attr: str) -> None:
-        if self.mode == 'learn':
-            self._record_event(module, f"read:{attr}")
-
-        # safe analysis callbacks
-        self._safe_on_attr_read(module, obj, attr)
-
-    @safe_hook
-    def _safe_on_attr_read(self, module: str, obj: Any, attr: str) -> None:
-        for a in self.analyses:
-            a.on_attr_read(module, obj, attr)
-
-
-    # -------------------------------
-    # Attribute-write hook + safe wrapper
-    # -------------------------------
-    def on_attr_write(self, module: str, obj: Any, attr: str, value: Any) -> None:
-        if self.mode == 'learn':
-            self._record_event(module, f"write:{attr}")
-
-        # safe analysis callbacks
-        self._safe_on_attr_write(module, obj, attr, value)
-
-    @safe_hook
-    def _safe_on_attr_write(self, module: str, obj: Any, attr: str, value: Any) -> None:
-        for a in self.analyses:
-            a.on_attr_write(module, obj, attr, value)
-
-    def on_import(self, parent: Optional[str], name: str) -> None:
-        # print(f"🧭 [on_import] {parent} imports {name}")
-        parent_mod = parent or '__main__'
-        self.dep_graph.setdefault(parent_mod, set()).add(name)
-        if self.mode == 'learn':
-            self._record_event(parent_mod, f"import:{name}")
-        if self.mode == 'enforce' and parent and name not in self.allowlist.get(parent, []):
-            raise ImportError(f"Import of {name} not allowed in module {parent}")
-        for a in self.analyses:
-            a.on_import(parent, name)
-
-    def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
-        if self.mode == 'learn':
-            self._record_event(module, f"call:{func}")
-        for a in self.analyses:
-            a.on_call(module, func, args, kwargs)
-    def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
-        if self.mode == 'learn':
-            self._record_event(module, f"call:{func}")
-
-        # ❗ ENFORCE FUNCTION CALLS
-        elif self.mode == 'enforce':
-            allowed = self.allowlist.get(module, [])
-            if func not in allowed:
-                raise RuntimeError(f"[SECURITY] Blocked unauthorized call: {module}.{func}()")
-
-        for a in self.analyses:
-            a.on_call(module, func, args, kwargs)
-
-    def on_return(self, module: str, func: str, result: Any) -> None:
-        if self.mode == 'learn':
-            self._record_event(module, f"return:{func}")
-        for a in self.analyses:
-            a.on_return(module, func, result)
-
-    def on_attr_read(self, module: str, obj: Any, attr: str) -> None:
-        if self.mode == 'learn':
-            self._record_event(module, f"read:{attr}")
-        for a in self.analyses:
-            a.on_attr_read(module, obj, attr)
-
-    def on_attr_write(self, module: str, obj: Any, attr: str, value: Any) -> None:
-        if self.mode == 'learn':
-            self._record_event(module, f"write:{attr}")
-        for a in self.analyses:
-            a.on_attr_write(module, obj, attr, value)
 
 
     def c_profile(self, frame, event, arg):
