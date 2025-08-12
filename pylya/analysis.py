@@ -1,9 +1,9 @@
 # File: analysis.py
 import threading
-import time
 import atexit
 from typing import Any, List, Tuple
 from pylya.hook_manager import Analysis
+from time import perf_counter
 
 
 
@@ -18,7 +18,7 @@ class PerfAnalyzer(Analysis):
         self._local = threading.local()
         self.exclude_prefixes = {
                 'builtins', '__builtins__', 'fastapi', 'pydantic', 
-                'starlette'
+                'starlette', '_json'
             }
         
         # Buffer for (module.func, duration) tuples
@@ -26,24 +26,43 @@ class PerfAnalyzer(Analysis):
         # Register dump at program exit
         atexit.register(self._dump)
 
-    def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
-        if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
-            return
-        stack = getattr(self._local, "stack", [])
-        stack.append(time.time())
-        self._local.stack = stack
 
-    def on_return(self, module: str, func: str, result: Any) -> None:
-        if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
+    def on_call(self, module, func, args, kwargs):
+        if module.startswith(tuple(self.exclude_prefixes)):
             return
-        stack = getattr(self._local, "stack", [])
+        stack = getattr(self._local, "stack", None)
+        if stack is None:
+            stack = []
+            self._local.stack = stack
+        stack.append(perf_counter())
+
+    def on_return(self, module, func, result):
+        if module.startswith(tuple(self.exclude_prefixes)):
+            return
+        stack = getattr(self._local, "stack", None)
         if not stack:
             return
         start = stack.pop()
-        self._local.stack = stack
-        duration = time.time() - start
-        # Buffer the measurement; no file I/O here
+        duration = perf_counter() - start
         self._buffer.append((f"{module}.{func}", duration))
+    # def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
+    #     if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
+    #         return
+    #     stack = getattr(self._local, "stack", [])
+    #     stack.append(time.time())
+    #     self._local.stack = stack
+
+    # def on_return(self, module: str, func: str, result: Any) -> None:
+    #     if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
+    #         return
+    #     stack = getattr(self._local, "stack", [])
+    #     if not stack:
+    #         return
+    #     start = stack.pop()
+    #     self._local.stack = stack
+    #     duration = time.time() - start
+    #     # Buffer the measurement; no file I/O here
+    #     self._buffer.append((f"{module}.{func}", duration))
 
     def results(self) -> List[Tuple[str, float]]:
         """
@@ -68,7 +87,7 @@ class TypeExtractor(Analysis):
         self._f = open(outfile, "a")
         self.exclude_prefixes = {
                 'builtins', '__builtins__', 'fastapi', 'pydantic', 
-                'starlette'
+                'starlette','_json'
             }
 
     def on_return(self, module: str, func: str, result: Any) -> None:

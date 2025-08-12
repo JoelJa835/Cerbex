@@ -62,6 +62,10 @@ def wrap_value(val, module_name: str, hook_mgr: HookManager):
     # primitives & modules stay
     if isinstance(val, PRIMITIVES) or isinstance(val, ModuleType):
         return val
+    # EXCLUDE_PREFIXES = ('fastapi', 'pydantic', 'starlette')
+    # if module_name.startswith(EXCLUDE_PREFIXES):
+    #     return val
+
     try:
 
         if inspect.isclass(val) and val.__module__ == module_name:
@@ -69,20 +73,6 @@ def wrap_value(val, module_name: str, hook_mgr: HookManager):
                 if should_wrap(attr_name, attr_val):  # filtering logic
                     setattr(val, attr_name, LazyWrapper(attr_name, attr_val, module_name, hook_mgr))
             return val
-        # if inspect.isclass(val) and val.__module__ == module_name:
-        #     for attr_name, attr_val in val.__dict__.items():
-        #         # Skip dunders and built-ins
-        #         if attr_name.startswith("__") and attr_name.endswith("__"):
-        #             continue
-        #         # Skip attributes from other modules
-        #         if getattr(attr_val, "__module__", module_name) != module_name:
-        #             continue
-                
-        #         wrapped = wrap_value(attr_val, module_name, hook_mgr)
-        #         if wrapped is not attr_val:
-        #             setattr(val, attr_name, wrapped)
-        #     return val
-
         # 2) Functions & bound methods
         if isinstance(val, (FunctionType, MethodType)) and val.__module__.startswith(module_name):
             # print(f"🔀 wrap_value called for module_name='{module_name}', val.__module__='{val.__module__}', fn={val.__name__}")
@@ -93,7 +83,7 @@ def wrap_value(val, module_name: str, hook_mgr: HookManager):
             if val.__name__ in ('__repr__', '__str__') or hasattr(val, '__wrapped__'):
                 return val
 
-            is_async = inspect.iscoroutinefunction(val)
+            is_async = inspect.iscoroutinefunction(val) or inspect.isasyncgenfunction(val)
             wrapper = make_wrapper(val, module_name, hook_mgr, is_async)
              # ✅ Preserve __name__, __qualname__, __doc__, __annotations__, __signature__, etc.
             wrapper = functools.update_wrapper(wrapper, val)
@@ -153,21 +143,34 @@ class InstrumentFinder(importlib.abc.MetaPathFinder):
         self.targets = set(targets)
 
     def _matches(self, fullname: str) -> bool:
-        return any(
+        matches = any(
             fullname == t or (t.endswith('*') and fullname.startswith(t[:-1]))
             for t in self.targets
         )
+        
+        return matches
     
 
     def find_spec(self, fullname, path, target=None):
         # 1) Always record first-time imports via on_import
         #    Finder only sees non-cached modules
-        self.hook_mgr.on_import(None, fullname)
+        # self.hook_mgr.on_import(None, fullname)
 
         # 2) Delegate to default PathFinder
+        # spec = importlib.machinery.PathFinder.find_spec(fullname, path)
+        # if spec and self._matches(fullname):
+        #     spec.loader = InstrumentLoader(self.hook_mgr, spec.loader)
+        # return spec
         spec = importlib.machinery.PathFinder.find_spec(fullname, path)
+        # print(f"DEBUG: fullname={fullname}, spec={spec is not None}", file=sys.stderr)
         if spec and self._matches(fullname):
-            spec.loader = InstrumentLoader(self.hook_mgr, spec.loader)
+            origin = getattr(spec, "origin", None) or ""
+            if origin.endswith(".py"):
+                # print(f"PY MODULE: {fullname}", file=sys.stderr)
+                spec.loader = InstrumentLoader(self.hook_mgr, spec.loader)
+            elif origin.endswith((".so", ".pyd")):
+                # print(f"C MODULE: {fullname}", file=sys.stderr)
+                self.hook_mgr.c_ext_modules.add(fullname)
         return spec
 
 
@@ -233,8 +236,44 @@ def rewrap_existing_targets(hook_mgr: HookManager, targets: List[str]):
                     setattr(mod, attr, wrapped)
                 except Exception:
                     pass
+# Most robust version
+def mark_loaded_c_exts(hook_mgr):
+    """Most robust version with additional checks"""
+    for name, mod in sys.modules.items():
+        spec = getattr(mod, "__spec__", None)
+        
+        # Skip if no module object
+        if mod is None:
+            continue
+            
+        # Extension modules (.so/.pyd files)
+        is_extension = (spec and 
+                       getattr(spec, "origin", None) and 
+                       spec.origin.endswith((".so", ".pyd")))
+        
+        # Built-in modules
+        is_builtin = name in sys.builtin_module_names
+        
+        # Additional check for frozen modules (like zipimport)
+        is_frozen = (spec and 
+                    spec.origin == "frozen" or
+                    getattr(mod, "__file__", None) is None and 
+                    hasattr(mod, "__loader__") and
+                    type(mod.__loader__).__name__ in ["FrozenImporter", "BuiltinImporter"])
+        
+        if is_extension or is_builtin or is_frozen:
+            # print(f"C MODULE: {name}", file=sys.stderr)
+            hook_mgr.c_ext_modules.add(name)
 
 
+
+# def mark_loaded_c_exts(hook_mgr):
+#         for name, mod in sys.modules.items():
+#             print(name)
+#             spec = getattr(mod, "__spec__", None)
+#             if spec and getattr(spec, "origin", None) and spec.origin.endswith((".so", ".pyd")):
+#                 print(f"C MODULE: {name}", file=sys.stderr)
+#                 hook_mgr.c_ext_modules.add(name)
 
 #     def find_spec(self, fullname, path, target=None):
 #         spec = importlib.machinery.PathFinder.find_spec(fullname, path)

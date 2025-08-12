@@ -7,8 +7,8 @@ import atexit
 import json
 from typing import Dict, List, Tuple
 
-from pylya.hook_manager import HookManager ,Analysis
-from pylya.importer import install_import_hook, rewrap_existing_targets
+from pylya.hook_manager import HookManager, Analysis
+from pylya.importer import install_import_hook, rewrap_existing_targets, mark_loaded_c_exts
 
 
 
@@ -59,6 +59,8 @@ def install_hooks(
 
     # 4) install hooks
     install_import_hook(hook_mgr, targets)
+
+    mark_loaded_c_exts(hook_mgr)
     rewrap_existing_targets(hook_mgr, targets)
     sys.setprofile(hook_mgr.c_profile)
 

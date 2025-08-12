@@ -3,13 +3,10 @@ import json
 import threading
 import builtins
 from typing import Any, Dict, List, Optional, Set
-
 from functools import wraps
+import logging
+logger = logging.getLogger(__name__)
 
-# File: hook_manager.py
-import json
-import threading
-from typing import Any, Dict, List, Optional, Set
 
 def safe_hook(fn):
     """
@@ -22,9 +19,9 @@ def safe_hook(fn):
     def wrapper(self, *args, **kwargs):
         try:
             return fn(self, *args, **kwargs)
-        except:
-            # Catch literally everything - even malformed exception types
-            # This uses bare except: which catches everything including SystemExit
+        except Exception as e:
+            # don't crash the program for analysis failures, but keep the signal exceptions
+            logger.exception("analysis hook failed: %s", e)
             return None
     return wrapper
 
@@ -51,6 +48,8 @@ class HookManager:
         self.dep_graph: Dict[str, Set[str]] = {}
         self.events: Dict[str, Set[str]] = {}
         self._local = threading.local()
+        # Track C extension modules we care about
+        self.c_ext_modules: Set[str] = set()
 
     def _record_event(self, module: str, tag: str) -> None:
         mod = module or '__main__'
@@ -107,32 +106,52 @@ class HookManager:
         for a in self.analyses:
             a.on_return(module, func, result)
 
-
+    # This is a sys.setprofile() callback function that monitors C function calls
     def c_profile(self, frame, event, arg):
-        # 1) Reentrancy guard first
+        """
+        Profile callback that tracks calls to C extension modules.
+        
+        This gets called by Python's profiling system for every function call/return.
+        It's designed to monitor and log calls to C extensions specifically.
+        """
+
+        # STEP 1: Prevent infinite recursion
+        # reentrancy guard - if we're already inside this hook, don't run again
         if getattr(self._local, 'in_hook', False):
-            return
-
-        # 2) Now mark that we’re in the hook
-        self._local.in_hook = True
+            return  # Exit early to prevent infinite loops
+        
+        # STEP 2: Filter for C function events only
+        if event not in ("c_call", "c_return"):
+            return  # Only care about C function calls/returns, ignore Python calls
+        
+        # STEP 3: Get the C function being called
+        fn = arg  # For c_call/c_return events, 'arg' is the C function object
+        
+        # STEP 4: Determine which module the function belongs to
+        mod = getattr(fn, '__module__', '__builtins__') or '__builtins__'
+        # STEP 5: Optional filtering - only track specific C modules
+        # If c_ext_modules is populated, only log calls to those modules
+        if mod not in self.c_ext_modules:
+            return  # Skip if this module isn't in our tracking list
+        
+        # STEP 6: Get function name
+        name = getattr(fn, '__name__', '<c_func>')  # Function name or default
+        
+        # STEP 7: Set reentrancy guard
+        self._local.in_hook = True  # Mark that we're inside the hook
+        
         try:
-            # 3) Filter events immediately
-            if event not in ("c_call", "c_return"):
-                return
-
-            fn = arg
-            mod = getattr(fn, '__module__', '__builtins__') or '__builtins__'
-            name = getattr(fn, '__name__', '<c_func>')
+            # STEP 8: Handle the specific event type
             if event == 'c_call':
-                self.on_call(mod, name, (), {})
-            else:
-                # pass the real return value through!
-                real_result = arg
-                self.on_return(mod, name, real_result)
+                # C function is being called
+                self.on_call(mod, name, (), {})  # Log the call (no args/kwargs available)
+            else:  # event == 'c_return'
+                # C function is returning
+                # Note: Python's profiler can't see C function return values
+                self.on_return(mod, name, None)  # Log return with None value
         finally:
+            # STEP 9: Always clear the reentrancy guard
             self._local.in_hook = False
-
-
 
 
 
@@ -140,48 +159,32 @@ class HookManager:
         return {m: sorted(list(deps)) for m, deps in self.dep_graph.items()}
 
 
-    def write_reports(
-        self,
-        deps_path: str = 'dependencies.json',
-        events_path: str = 'events.json',
-        allowlist_path: str = 'allowlist.json'
-    ) -> None:
-
+    def write_reports(self, deps_path='dependencies.json', events_path='events.json', allowlist_path='allowlist.json'):
         if self.mode == 'enforce':
             return
-        # Inline original write_reports behavior from BaseHookManager
-        # 1) Write dependencies.json
+
         deps = self.record_allowlist()
         with open(deps_path, 'w') as f:
             json.dump({'dependencies': deps}, f, indent=2)
 
-        # 2) Write events.json
-        events_out = {module: {event: True for event in tags}
-                      for module, tags in getattr(self, 'events', {}).items()}
+        # events already in memory
+        events_out = {module: {event: True for event in tags} for module, tags in self.events.items()}
         with open(events_path, 'w') as f:
             json.dump(events_out, f, indent=2)
 
-        # 3) Build allowlist.json for enforce mode
-        try:
-            with open(events_path, 'r') as f:
-                events = json.load(f)
-        except FileNotFoundError:
-            return
-
-        # Start with import allowlist from dep_graph
-        allow = {m: sorted(deps) for m, deps in self.dep_graph.items()}
-
-        # Augment with call-based allowlist from events.json
-        for module, tags in events.items():
-            calls = [tag.split(':', 1)[1]
-                    for tag, seen in tags.items()
-                    if seen and tag.startswith('call:')]
+        # build allowlist from dep_graph + events in memory
+        allow = {m: sorted(list(deps)) for m, deps in self.dep_graph.items()}
+        for module, tags in self.events.items():
+            calls = [tag.split(':', 1)[1] for tag in tags if tag.startswith('call:')]
             if calls:
                 allow.setdefault(module, []).extend(calls)
-                allow[module] = sorted(set(allow[module]))  # remove duplicates
+                allow[module] = sorted(set(allow[module]))
 
         with open(allowlist_path, 'w') as f:
             json.dump({'allowlist': allow}, f, indent=2)
+
+
+
 
 
 
