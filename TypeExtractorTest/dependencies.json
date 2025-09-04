@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "__main__": [
+      "string_utils"
+    ],
+    "importlib._bootstrap_external": [
+      "_io",
+      "tokenize"
+    ]
+  }
+}

@@ -62,12 +62,15 @@ def wrap_value(val, module_name: str, hook_mgr: HookManager):
     # primitives & modules stay
     if isinstance(val, PRIMITIVES) or isinstance(val, ModuleType):
         return val
-    # EXCLUDE_PREFIXES = ('fastapi', 'pydantic', 'starlette')
-    # if module_name.startswith(EXCLUDE_PREFIXES):
-    #     return val
 
     try:
 
+        # ✅ Special case: don't break FastAPI dependency overrides
+        # If this callable is already registered in app.dependency_overrides,
+        # we just tag it for analysis instead of replacing it
+        # if callable(val) and hasattr(val, FASTAPI_DEP_OVERRIDES_ATTR):
+        #     return val
+        
         if inspect.isclass(val) and val.__module__ == module_name:
             for attr_name, attr_val in list(val.__dict__.items()):
                 if should_wrap(attr_name, attr_val):  # filtering logic
@@ -82,8 +85,13 @@ def wrap_value(val, module_name: str, hook_mgr: HookManager):
 
             if val.__name__ in ('__repr__', '__str__') or hasattr(val, '__wrapped__'):
                 return val
+            # # ✅ If it's a dependency function, mark the original and skip full wrapping
+            # if "dependency" in getattr(val, "__qualname__", "").lower():
+            #     setattr(val, FASTAPI_DEP_OVERRIDES_ATTR, True)
+            #     return val
 
             is_async = inspect.iscoroutinefunction(val) or inspect.isasyncgenfunction(val)
+            # print(f"[DEBUG] entering {val.__module__}.{module_name}")
             wrapper = make_wrapper(val, module_name, hook_mgr, is_async)
              # ✅ Preserve __name__, __qualname__, __doc__, __annotations__, __signature__, etc.
             wrapper = functools.update_wrapper(wrapper, val)
@@ -100,7 +108,6 @@ def wrap_value(val, module_name: str, hook_mgr: HookManager):
         pass
 
     return val
-
 
 
 class InstrumentLoader(importlib.abc.Loader):
@@ -130,6 +137,7 @@ class InstrumentLoader(importlib.abc.Loader):
         for attr_name, attr_val in list(module.__dict__.items()):
             if not attr_name.startswith('__'):
                 try:
+                    # print(f"[WRAP_TIME] {attr_name} in {module.__name__}")
                     module.__dict__[attr_name] = wrap_value(
                         attr_val, module.__name__, self.hook_mgr
                     )
@@ -209,6 +217,7 @@ def install_import_hook(
                 if not attr.startswith('__'):
                     try:
                         raw = getattr(module, attr)
+                        # print(f"[DEBUG import_module] Wrapping {module.__name__}.{attr}")
                         setattr(
                             module,
                             attr,

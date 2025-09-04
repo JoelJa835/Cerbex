@@ -1,0 +1,61 @@
+{
+  "allowlist": {
+    "__main__": [
+      "string_utils"
+    ],
+    "importlib._bootstrap_external": [
+      "_io",
+      "tokenize"
+    ],
+    "atexit": [
+      "register"
+    ],
+    "builtins": [
+      "__import__",
+      "any",
+      "callable",
+      "compile",
+      "exec",
+      "getattr",
+      "hasattr",
+      "id",
+      "isinstance",
+      "len",
+      "max",
+      "print",
+      "setattr",
+      "sorted"
+    ],
+    "_imp": [
+      "acquire_lock",
+      "release_lock"
+    ],
+    "_thread": [
+      "allocate_lock",
+      "get_ident"
+    ],
+    "_weakref": [
+      "_remove_dead_weakref"
+    ],
+    "posix": [
+      "fspath",
+      "listdir",
+      "stat"
+    ],
+    "_io": [
+      "open",
+      "open_code"
+    ],
+    "sys": [
+      "getrecursionlimit"
+    ],
+    "string_utils": [
+      "concat",
+      "count_chars",
+      "shout"
+    ],
+    "_json": [
+      "encode_basestring_ascii"
+    ]
+  }
+}

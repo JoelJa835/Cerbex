@@ -6,8 +6,6 @@ from pylya.hook_manager import Analysis
 from time import perf_counter
 
 
-
-
 class PerfAnalyzer(Analysis):
     """
     Measures execution time of each function call with zero I/O overhead during execution.
@@ -80,25 +78,65 @@ class PerfAnalyzer(Analysis):
         with open(self.outfile, "a") as f:
             f.writelines(lines)
 
-
-
 class TypeExtractor(Analysis):
+    """
+    Extracts return types of each function call with zero I/O overhead during execution.
+    Buffers type info in memory and dumps to file at program exit.
+    """
     def __init__(self, outfile: str = "types.log") -> None:
-        self._f = open(outfile, "a")
+        self.outfile = outfile
         self.exclude_prefixes = {
-                'builtins', '__builtins__', 'fastapi', 'pydantic', 
-                'starlette','_json'
-            }
+            'builtins', '__builtins__', 'fastapi', 'pydantic', 
+            'starlette', '_json'
+        }
+        
+        # Buffer for (module.func, type_name) tuples
+        self._buffer: List[Tuple[str, str]] = []
+        # Register dump at program exit
+        atexit.register(self._dump)
 
     def on_return(self, module: str, func: str, result: Any) -> None:
         # Skip library internals, only log user code
         if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
             return
-        self._f.write(f"[Type] {module}.{func} returned {type(result).__name__}\n")
-        self._f.flush()
+        
+        # Buffer the type information instead of writing immediately
+        self._buffer.append((f"{module}.{func}", type(result).__name__))
+    
+    def results(self) -> List[Tuple[str, str]]:
+        """
+        Returns the list of ("module.func", type_name) tuples.
+        """
+        return list(self._buffer)
 
-    def __del__(self):
-        self._f.close()
+    def _dump(self) -> None:
+        """
+        Writes all buffered type information to the output file in one batch.
+        """
+        if not self._buffer:
+            return
+        lines = [f"[Type] {name} returned {type_name}\n" for name, type_name in self._buffer]
+        with open(self.outfile, "a") as f:
+            f.writelines(lines)
+
+
+# class TypeExtractor(Analysis):
+#     def __init__(self, outfile: str = "types.log") -> None:
+#         self._f = open(outfile, "a")
+#         self.exclude_prefixes = {
+#                 'builtins', '__builtins__', 'fastapi', 'pydantic', 
+#                 'starlette','_json'
+#             }
+
+#     def on_return(self, module: str, func: str, result: Any) -> None:
+#         # Skip library internals, only log user code
+#         if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
+#             return
+#         self._f.write(f"[Type] {module}.{func} returned {type(result).__name__}\n")
+#         self._f.flush()
+
+#     def __del__(self):
+#         self._f.close()
 
 
 

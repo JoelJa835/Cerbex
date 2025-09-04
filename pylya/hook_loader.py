@@ -71,7 +71,6 @@ def install_hooks(
     return hook_mgr
 
 
-
 # def install_analysis(
 #     events_path: str = 'events.json',
 #     analyses: List[Analysis] = None,
