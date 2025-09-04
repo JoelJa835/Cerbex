@@ -60,6 +60,8 @@ def main():
         nargs=argparse.REMAINDER,
         help="Arguments to pass to the target script"
     )
+    parser.add_argument("--no-log", action="store_true",
+                    help="Disable in-memory event recording (imports/calls/returns)")
 
     args = parser.parse_args()
     outdir = Path(args.outdir)
@@ -74,7 +76,8 @@ def main():
         install_hooks(
             config_path=args.config,
             mode="learn",
-            analyses=analyses
+            analyses=analyses,
+            log_events=not args.no_log
         )
 
         # Execute the script under instrumentation
@@ -88,7 +91,8 @@ def main():
             config_path=args.config,
             mode="enforce",
             analyses=[],
-            allowlist_path=args.allowlist
+            allowlist_path=args.allowlist,
+            log_events=not args.no_log
         )
 
         # Execute the script under enforcement

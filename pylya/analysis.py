@@ -78,6 +78,11 @@ class PerfAnalyzer(Analysis):
         with open(self.outfile, "a") as f:
             f.writelines(lines)
 
+
+
+
+
+
 class TypeExtractor(Analysis):
     """
     Extracts return types of each function call with zero I/O overhead during execution.
@@ -109,6 +114,7 @@ class TypeExtractor(Analysis):
         """
         return list(self._buffer)
 
+
     def _dump(self) -> None:
         """
         Writes all buffered type information to the output file in one batch.
@@ -137,9 +143,6 @@ class TypeExtractor(Analysis):
 
 #     def __del__(self):
 #         self._f.close()
-
-
-
 
 
 # class TypeExtractor(Analysis):

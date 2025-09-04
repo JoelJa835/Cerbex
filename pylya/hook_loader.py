@@ -41,7 +41,8 @@ def install_hooks(
     config_path: str = 'config.json',
     mode: str       = 'learn',
     analyses        = None,
-    allowlist_path: str = 'allowlist.json'
+    allowlist_path: str = 'allowlist.json',
+    log_events=True
 ) -> HookManager:
     # 1) load config & allowlist
 
@@ -54,7 +55,7 @@ def install_hooks(
         analyses = []
 
     # 2) always create a HookManager
-    hook_mgr = HookManager(targets, analyses, mode=mode, allowlist=raw_allowlist,)
+    hook_mgr = HookManager(targets, analyses, mode=mode, allowlist=raw_allowlist,log_events=log_events)
 
 
     # 4) install hooks

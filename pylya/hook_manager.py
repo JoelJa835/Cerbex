@@ -39,10 +39,12 @@ class HookManager:
         targets: List[str],
         analyses: List[Analysis],
         mode: str = 'learn',
+        log_events=True,
         allowlist: Optional[Dict[str, List[str]]] = None,
     ) -> None:
         self.analyses = analyses
         self.mode = mode
+        self.log_events = log_events
         self.allowlist = allowlist or {}
         self.targets  = targets
         self.dep_graph: Dict[str, Set[str]] = {}
@@ -59,7 +61,7 @@ class HookManager:
         parent_mod = parent or '__main__'
         self.dep_graph.setdefault(parent_mod, builtins.set()).add(name)
 
-        if self.mode == 'learn':
+        if self.mode == "learn" and self.log_events:
             self._record_event(parent_mod, f"import:{name}")
         elif self.mode == 'enforce' and parent and name not in self.allowlist.get(parent, []):
             # enforcement must escape
@@ -74,7 +76,7 @@ class HookManager:
             a.on_import(parent, name)
 
     def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
-        if self.mode == 'learn':
+        if self.mode == "learn" and self.log_events:
             self._record_event(module, f"call:{func}")
         elif self.mode == 'enforce':
             allowed = self.allowlist.get(module, [])
@@ -95,7 +97,7 @@ class HookManager:
     # Return hook + safe wrapper
     # -------------------------------
     def on_return(self, module: str, func: str, result: Any) -> None:
-        if self.mode == 'learn':
+        if self.mode == "learn" and self.log_events:
             self._record_event(module, f"return:{func}")
 
         # safe analysis callbacks
