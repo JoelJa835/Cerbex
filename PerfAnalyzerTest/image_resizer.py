@@ -18,20 +18,4 @@ if __name__ == "__main__":
 
 
 
-# class MyClass:
-#     def __init__(self):
-#         self.value = 42  # WRITE
 
-#     def show(self):
-#         return self.value  # READ
-
-# def run():
-#     obj = MyClass()
-#     obj.value = 100  # WRITE
-#     print(obj.show())  # READ
-
-
-
-
-# pylya --mode learn --config config.json -- unsafe_deserialize.py
-#  2000  pylya --mode enforce --allowlist allowlist.json -- unsafe_deserialize.py

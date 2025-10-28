@@ -121,12 +121,38 @@ class TypeExtractor(Analysis):
         """
         if not self._buffer:
             return
-        lines = [f"[Type] {name} returned {type_name}\n" for name, type_name in self._buffer]
-        with open(self.outfile, "a") as f:
-            f.writelines(lines)
 
 
-# class TypeExtractor(Analysis):
+
+class CustomDataFlowAnalyzer(Analysis):
+    """
+    Example of a user-defined analysis that tracks calls to 'process_item'
+    and logs the type of its first argument.
+    """
+    def __init__(self, outfile="dataflow.log"):
+        self.outfile = outfile
+        self._buffer = []  # store (type_name, module, func)
+        atexit.register(self._dump)
+
+    def on_call(self, module, func, args, kwargs):
+        if func == "process_item":
+            arg_type = type(args[0]).__name__ if args else "None"
+            # Add an entry to the in-memory buffer
+            self._buffer.append((module, func, arg_type))
+
+    def _dump(self):
+        if not self._buffer:
+            return
+        counts = {}
+        for _, _, t in self._buffer:
+            counts[t] = counts.get(t, 0) + 1
+
+        with open(self.outfile, "w") as f:
+            f.write(f"process_item called {len(self._buffer)} times\n")
+            for t, cnt in counts.items():
+                f.write(f"  {t}: {cnt}\n")
+      
+            
 #     def __init__(self, outfile: str = "types.log") -> None:
 #         self._f = open(outfile, "a")
 #         self.exclude_prefixes = {

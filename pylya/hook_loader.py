@@ -54,6 +54,7 @@ def install_hooks(
     if analyses is None:
         analyses = []
 
+
     # 2) always create a HookManager
     hook_mgr = HookManager(targets, analyses, mode=mode, allowlist=raw_allowlist,log_events=log_events)
 

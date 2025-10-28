@@ -1,0 +1,6 @@
+{
+    "targets": [
+      "pickle",
+      "unsafe_deserialize"
+    ]
+  }

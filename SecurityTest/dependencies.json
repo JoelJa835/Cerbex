@@ -1,0 +1,62 @@
+{
+  "dependencies": {
+    "runpy": [
+      "_io",
+      "pkgutil"
+    ],
+    "__main__": [
+      "_compat_pickle",
+      "_pickle",
+      "org",
+      "pickle",
+      "pkgutil",
+      "types"
+    ],
+    "importlib._bootstrap_external": [
+      "_io",
+      "tokenize"
+    ],
+    "pkgutil": [
+      "collections",
+      "functools",
+      "importlib",
+      "importlib.machinery",
+      "importlib.util",
+      "marshal",
+      "os",
+      "os.path",
+      "sys",
+      "types",
+      "warnings",
+      "zipimport"
+    ],
+    "functools": [
+      "types",
+      "typing",
+      "weakref"
+    ],
+    "zipimport": [
+      "_io"
+    ],
+    "pickle": [
+      "_compat_pickle",
+      "_pickle",
+      "codecs",
+      "copyreg",
+      "functools",
+      "io",
+      "itertools",
+      "org.python.core",
+      "re",
+      "struct",
+      "sys",
+      "types"
+    ],
+    "importlib._bootstrap": [
+      "_compat_pickle",
+      "codecs",
+      "copyreg",
+      "functools"
+    ]
+  }
+}

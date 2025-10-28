@@ -162,7 +162,7 @@ class InstrumentFinder(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path, target=None):
         # 1) Always record first-time imports via on_import
         #    Finder only sees non-cached modules
-        # self.hook_mgr.on_import(None, fullname)
+        self.hook_mgr.on_import(None, fullname)
 
         # 2) Delegate to default PathFinder
         # spec = importlib.machinery.PathFinder.find_spec(fullname, path)

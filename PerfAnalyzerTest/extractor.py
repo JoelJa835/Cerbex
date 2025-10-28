@@ -6,7 +6,6 @@ pattern = re.compile(r"\[Perf\]\s+([\w\.]+)\s+took\s+([\d.]+)s")
 
 # Only keep these fully qualified names
 keys = {
-    "image_resizer.main",
     "PIL.Image.open",
     "PIL.Image.thumbnail",
     "PIL.Image.save",
@@ -26,6 +25,6 @@ with open("perf.log") as f:
 # Print per‑call and totals
 for fn in keys:
     print(f"\n=== {fn} ===")
-    # for t in times[fn]:
-    #     print(f"  {t:.6f}s")
+    #for t in times[fn]:
+        #print(f"  {t:.6f}s")
     print(f"TOTAL {fn}: {sum(times[fn]):.6f}s")

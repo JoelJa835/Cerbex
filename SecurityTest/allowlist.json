@@ -1,0 +1,125 @@
+{
+  "allowlist": {
+    "runpy": [
+      "_io",
+      "pkgutil"
+    ],
+    "__main__": [
+      "_compat_pickle",
+      "_pickle",
+      "org",
+      "pickle",
+      "pkgutil",
+      "types"
+    ],
+    "importlib._bootstrap_external": [
+      "_io",
+      "tokenize"
+    ],
+    "pkgutil": [
+      "collections",
+      "functools",
+      "importlib",
+      "importlib.machinery",
+      "importlib.util",
+      "marshal",
+      "os",
+      "os.path",
+      "sys",
+      "types",
+      "warnings",
+      "zipimport"
+    ],
+    "functools": [
+      "types",
+      "typing",
+      "weakref"
+    ],
+    "zipimport": [
+      "_io"
+    ],
+    "pickle": [
+      "_compat_pickle",
+      "_pickle",
+      "codecs",
+      "copyreg",
+      "functools",
+      "io",
+      "itertools",
+      "org.python.core",
+      "re",
+      "struct",
+      "sys",
+      "types"
+    ],
+    "importlib._bootstrap": [
+      "_compat_pickle",
+      "codecs",
+      "copyreg",
+      "functools"
+    ],
+    "atexit": [
+      "register"
+    ],
+    "builtins": [
+      "__build_class__",
+      "__import__",
+      "any",
+      "callable",
+      "compile",
+      "dir",
+      "eval",
+      "exec",
+      "getattr",
+      "hasattr",
+      "id",
+      "isinstance",
+      "len",
+      "locals",
+      "max",
+      "min",
+      "ord",
+      "print",
+      "setattr",
+      "sorted"
+    ],
+    "_imp": [
+      "_fix_co_filename",
+      "acquire_lock",
+      "create_builtin",
+      "exec_builtin",
+      "find_frozen",
+      "is_builtin",
+      "release_lock"
+    ],
+    "_thread": [
+      "allocate_lock",
+      "get_ident"
+    ],
+    "posix": [
+      "_path_normpath",
+      "fspath",
+      "getcwd",
+      "stat"
+    ],
+    "io": [
+      "open",
+      "open_code"
+    ],
+    "marshal": [
+      "loads"
+    ],
+    "sys": [
+      "_getframe",
+      "exit",
+      "getrecursionlimit",
+      "intern"
+    ],
+    "_sre": [
+      "compile"
+    ],
+    "_json": [
+      "encode_basestring_ascii"
+    ]
+  }
+}

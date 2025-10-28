@@ -1,15 +1,7 @@
 {
     "targets": [
+      "request_example*",
       "requests",
-      "urllib3",
-      "certifi",
-      "charset_normalizer",
-      "idna",
-      "python_dateutil",
-      "typing_extensions",
-      "six",
-      "pyyaml",
-      "packaging"
+      "json"
     ]
   }
-  

@@ -5,13 +5,14 @@ import argparse
 from pathlib import Path
 
 from pylya.hook_loader import install_hooks
-from pylya.analysis import PerfAnalyzer, TypeExtractor
+from pylya.analysis import PerfAnalyzer, TypeExtractor, CustomDataFlowAnalyzer
 
 __version__ = "0.1.0"
 
 ANALYSIS_MAP = {
     "perf": PerfAnalyzer,
-    "types": TypeExtractor
+    "types": TypeExtractor,
+    "dataflow": CustomDataFlowAnalyzer,
 }
 
 
@@ -71,7 +72,6 @@ def main():
         outdir.mkdir(parents=True, exist_ok=True)
         analyses = [ANALYSIS_MAP[name](outfile=str(outdir / f"{name}.log"))
                     for name in args.analyses]
-
         # Install hooks in learn mode; JSON reports are auto-written to cwd
         install_hooks(
             config_path=args.config,
