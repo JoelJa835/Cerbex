@@ -1,17 +1,17 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="pylya",
+    name="Cerbex",
     version="0.1.0",
-    description="Pylya: Python hook instrumentation and enforcement tool",
-    author="Your Name",
-    packages=find_packages(),  # Automatically finds pylya/
+    description="Cerbex: Python hook instrumentation and enforcement tool",
+    author="Joel Jani",
+    packages=find_packages(),  # Automatically finds Cerbex/
     install_requires=[
         # Add your runtime deps here (if any)
     ],
     entry_points={
         "console_scripts": [
-            "pylya=pylya.cli:main",  # CLI entry point
+            "Cerbex=Cerbex.cli:main",  # CLI entry point
         ],
     },
     include_package_data=True,

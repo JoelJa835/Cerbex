@@ -8,7 +8,7 @@ from pathlib import Path
 from functools import wraps
 from typing import Any, Callable
 from types import TracebackType
-from pylya.hook_manager import HookManager
+from Cerbex.hook_manager import HookManager
 
 
 

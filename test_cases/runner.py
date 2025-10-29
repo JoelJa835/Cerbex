@@ -1,4 +1,4 @@
-from pylya.hook_loader import install_hooks
+from Cerbex.hook_loader import install_hooks
 
 # Load hooks in 'learn' mode: this writes dependencies.json, events.json, allowlist.json.
 install_hooks(

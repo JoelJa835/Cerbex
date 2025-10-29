@@ -4,8 +4,8 @@ import runpy
 import argparse
 from pathlib import Path
 
-from pylya.hook_loader import install_hooks
-from pylya.analysis import PerfAnalyzer, TypeExtractor, CustomDataFlowAnalyzer
+from Cerbex.hook_loader import install_hooks
+from Cerbex.analysis import PerfAnalyzer, TypeExtractor, CustomDataFlowAnalyzer
 
 __version__ = "0.1.0"
 

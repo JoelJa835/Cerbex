@@ -1,5 +1,5 @@
-from pylya.hook_loader import install_hooks
-from pylya.analysis import TypeExtractor
+from Cerbex.hook_loader import install_hooks
+from Cerbex.analysis import TypeExtractor
 
 install_hooks(
     config_path="config.json",

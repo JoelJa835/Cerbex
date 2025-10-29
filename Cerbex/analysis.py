@@ -2,7 +2,7 @@
 import threading
 import atexit
 from typing import Any, List, Tuple
-from pylya.hook_manager import Analysis
+from Cerbex.hook_manager import Analysis
 from time import perf_counter
 
 

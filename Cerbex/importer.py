@@ -10,8 +10,8 @@ from types import ModuleType, FunctionType, MethodType
 from typing import List, Any
 from weakref import WeakKeyDictionary
 
-from pylya.hook_manager import HookManager
-from pylya.utils import make_wrapper
+from Cerbex.hook_manager import HookManager
+from Cerbex.utils import make_wrapper
 
 
 

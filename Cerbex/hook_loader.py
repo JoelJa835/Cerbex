@@ -7,8 +7,8 @@ import atexit
 import json
 from typing import Dict, List, Tuple
 
-from pylya.hook_manager import HookManager, Analysis
-from pylya.importer import install_import_hook, rewrap_existing_targets, mark_loaded_c_exts
+from Cerbex.hook_manager import HookManager, Analysis
+from Cerbex.importer import install_import_hook, rewrap_existing_targets, mark_loaded_c_exts
 
 
 
