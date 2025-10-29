@@ -17,10 +17,7 @@ It can measure **performance** and extract **function return types**, and can be
   * [Installation](#installation)
   * [Usage](#usage)
 * [Programmatic API](#programmatic-api)
-* [Examples](#examples)
-* [Contributing](#contributing)
 * [License](#license)
-* [Contact](#contact)
 * [Acknowledgements](#acknowledgements)
 
 ---
@@ -46,7 +43,7 @@ It can measure **performance** and extract **function return types**, and can be
 
 ### Installation
 
-Clone the repository and install in **editable mode**:
+Clone the repository and install in **editable mode** in the directory that contains setup.py:
 
 ```bash
 git clone https://github.com/JoelJa835/Cerbex.git
@@ -126,27 +123,9 @@ All imports and function calls go through Cerbex's `HookManager` and analyses. G
 
 ---
 
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a pull request
-
----
-
 ## License
 
 Distributed under the MIT License. See `LICENSE` for details.
-
----
-
-## Contact
-
-Joel Jani – [your email]
-Project Link: [https://github.com/JoelJa835/Cerbex](https://github.com/JoelJa835/Cerbex)
 
 ---
 
@@ -154,7 +133,7 @@ Project Link: [https://github.com/JoelJa835/Cerbex](https://github.com/JoelJa835
 
 * [Best README Template](https://github.com/othneildrew/Best-README-Template)
 * Python standard library documentation
-* Inspiration from dynamic analysis frameworks
+* Inspiration from [Lya](https://github.com/andromeda/lya) dynamic analysis framework
 
 
 
