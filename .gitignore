@@ -1,5 +1,6 @@
 # Ignore specific file
 Cerbex/wholefile.py
+Cerbex/old.py
 
 # Ignore Python bytecode and caches
 *.pyc
