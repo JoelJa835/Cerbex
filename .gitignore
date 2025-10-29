@@ -1,4 +1,17 @@
-pylya/wholefile.py
-*.egg-info/
+# Ignore specific file
+Cerbex/wholefile.py
+
+# Ignore Python bytecode and caches
 *.pyc
-pylya/__pycache__/
+__pycache__/
+Cerbex/__pycache__/
+
+# Ignore build info
+*.egg-info/
+
+# Ignore Cerbex output logs and JSON reports from any directory
+**/events.json
+**/dependencies.json
+**/allowlist.json
+**/perf.log
+**/types.log

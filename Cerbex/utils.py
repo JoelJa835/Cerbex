@@ -10,10 +10,6 @@ from typing import Any, Callable
 from types import TracebackType
 from Cerbex.hook_manager import HookManager
 
-
-
-
-
 def make_wrapper(
     fn: Callable,
     module: str,

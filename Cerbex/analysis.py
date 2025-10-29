@@ -43,24 +43,6 @@ class PerfAnalyzer(Analysis):
         start = stack.pop()
         duration = perf_counter() - start
         self._buffer.append((f"{module}.{func}", duration))
-    # def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
-    #     if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
-    #         return
-    #     stack = getattr(self._local, "stack", [])
-    #     stack.append(time.time())
-    #     self._local.stack = stack
-
-    # def on_return(self, module: str, func: str, result: Any) -> None:
-    #     if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
-    #         return
-    #     stack = getattr(self._local, "stack", [])
-    #     if not stack:
-    #         return
-    #     start = stack.pop()
-    #     self._local.stack = stack
-    #     duration = time.time() - start
-    #     # Buffer the measurement; no file I/O here
-    #     self._buffer.append((f"{module}.{func}", duration))
 
     def results(self) -> List[Tuple[str, float]]:
         """
@@ -77,10 +59,6 @@ class PerfAnalyzer(Analysis):
         lines = [f"[Perf] {name} took {dur:.6f}s\n" for name, dur in self._buffer]
         with open(self.outfile, "a") as f:
             f.writelines(lines)
-
-
-
-
 
 
 class TypeExtractor(Analysis):
@@ -151,7 +129,28 @@ class CustomDataFlowAnalyzer(Analysis):
             f.write(f"process_item called {len(self._buffer)} times\n")
             for t, cnt in counts.items():
                 f.write(f"  {t}: {cnt}\n")
-      
+
+
+
+
+ # def on_call(self, module: str, func: str, args: tuple, kwargs: dict) -> None:
+    #     if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
+    #         return
+    #     stack = getattr(self._local, "stack", [])
+    #     stack.append(time.time())
+    #     self._local.stack = stack
+
+    # def on_return(self, module: str, func: str, result: Any) -> None:
+    #     if any(module.startswith(prefix) for prefix in self.exclude_prefixes):
+    #         return
+    #     stack = getattr(self._local, "stack", [])
+    #     if not stack:
+    #         return
+    #     start = stack.pop()
+    #     self._local.stack = stack
+    #     duration = time.time() - start
+    #     # Buffer the measurement; no file I/O here
+    #     self._buffer.append((f"{module}.{func}", duration))     
             
 #     def __init__(self, outfile: str = "types.log") -> None:
 #         self._f = open(outfile, "a")

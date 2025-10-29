@@ -45,9 +45,6 @@ def install_hooks(
     log_events=True
 ) -> HookManager:
     # 1) load config & allowlist
-
-    # print(mode)
-    # print(allowlist_path)
     targets, _   = _load_config(config_path)
     raw_allowlist = mode == 'enforce' and _load_allowlist(allowlist_path) or {}
 
